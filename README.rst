@@ -20,10 +20,20 @@ Example
         foo = B()
 
 
+    a = A()
+
     q = Q(foo__bar='Hello World!') | Q(foo__bar__istartswith='hello',
                                        foo__baz__gt=1)
 
-    print q.test(A())
+    assert q(a)
+
+    a.foo.bar = 'Hello 2013!'
+
+    assert not q(a)
+
+    a.foo.baz = 2
+
+    assert q(a)
 
 
 Status

@@ -4,8 +4,11 @@ def digattr(obj, *args):
 
 class Query(object):
 
-    def test(self, object):
-        raise NotImplemented
+    def __init__(self, callback=None):
+        self.callback = callback
+
+    def test(self, obj):
+        raise NotImplemented()
 
     def __and__(self, other):
         return CompoundQuery(self, other)
@@ -13,15 +16,32 @@ class Query(object):
     def __or__(self, other):
         return CompoundQuery(self, other, op=lambda x, y: x or y)
 
+    def with_callback(self, callback):
+        self.callback = callback
+        return self
+
+    def __call__(self, *args):
+        if len(args) == 1 and callable(args[0]):
+            return self.with_callback(args[0])
+        elif len(args) >= 1 and not callable(args[0]):
+            is_ok = self.test(args[0])
+            if is_ok:
+                if self.callback:
+                    self.callback(self, args[0])
+            return is_ok
+        else:
+            raise ValueError()
+
 
 class CompoundQuery(Query):
 
     def __init__(self, *args, **kwargs):
         self.queries = args
         self.op = kwargs.pop('op', lambda x, y: x and y)
+        super(CompoundQuery, self).__init__(**kwargs)
 
     def test(self, obj):
-        return reduce(self.op, [query.test(obj) for query in self.queries])
+        return reduce(self.op, [query(obj) for query in self.queries])
 
 
 class PredicateQuery(Query):
@@ -34,7 +54,6 @@ class PredicateQuery(Query):
         'gt': lambda x, y: x > y,
         'lte': lambda x, y: x <= y,
         'gte': lambda x, y: x >= y,
-
         'iexact': lambda x, y: x.lower() == y.lower(),
         'startswith': lambda x, y: x.startswith(y),
         'istartswith': lambda x, y: x.lower().startswith(y.lower()),
@@ -42,12 +61,11 @@ class PredicateQuery(Query):
         'iendswith': lambda x, y: x.lower().endswith(y.lower()),
         'contains': lambda x, y: x.find(y) >= 0,
         'icontains': lambda x, y: x.lower().find(y.lower()) >= 0,
-
         'isnull': lambda x, y: x is None if y else x is not None,
         'in': lambda x, y: x in y,
     }
 
-    def __init__(self, key, value):
+    def __init__(self, key, value, **kwargs):
         self.key = key
         self.value = value
         frags = key.split('__')
@@ -56,6 +74,7 @@ class PredicateQuery(Query):
         else:
             self.predicate = self.registry[self.DEFAULT_PREDICATE_NAME]
         self.attrs = frags
+        super(PredicateQuery, self).__init__(**kwargs)
 
     def test(self, obj):
         return self.predicate(digattr(obj, *self.attrs), self.value)
@@ -64,7 +83,5 @@ class PredicateQuery(Query):
 class Q(CompoundQuery):
 
     def __init__(self, **kwargs):
-        args = []
-        for k, v in kwargs.items():
-            args.append(PredicateQuery(k, v))
-        super(Q, self).__init__(*args)
+        super(Q, self).__init__(
+            *[PredicateQuery(k, v) for k, v in kwargs.items()])
