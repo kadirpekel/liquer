@@ -2,24 +2,6 @@ def digattr(obj, *args):
     return digattr(getattr(obj, args[0]), *args[1:]) if args else obj
 
 
-class Predicate(object):
-    def __init__(self, name, func):
-        self.name = name
-        self.func = func
-
-    def __call__(self, a, b):
-        return self.func(a, b)
-
-
-class PredicateRegistry(dict):
-
-    def __init__(self, *args, **kwargs):
-        for arg in args:
-            self[arg.name] = arg
-        for k, v in kwargs.items():
-            self[k] = Predicate(k, v)
-
-
 class Query(object):
 
     def test(self, object):
@@ -44,34 +26,35 @@ class CompoundQuery(Query):
 
 class PredicateQuery(Query):
 
-    DEFAULT_PREDICATE = Predicate('exact', lambda x, y: x == y)
+    DEFAULT_PREDICATE_NAME = 'exact'
 
-    registry = PredicateRegistry(
-        DEFAULT_PREDICATE,
-        Predicate('lt', lambda x, y: x < y),
-        Predicate('gt', lambda x, y: x > y),
-        Predicate('lte', lambda x, y: x <= y),
-        Predicate('gte', lambda x, y: x >= y),
+    registry = {
+        DEFAULT_PREDICATE_NAME: lambda x, y: x == y,
+        'lt': lambda x, y: x < y,
+        'gt': lambda x, y: x > y,
+        'lte': lambda x, y: x <= y,
+        'gte': lambda x, y: x >= y,
 
-        Predicate('iexact', lambda x, y: x.lower() == y.lower()),
-        Predicate('startswith', lambda x, y: x.startswith(y)),
-        Predicate('istartswith', lambda x, y: x.lower().startswith(y.lower())),
-        Predicate('endswith', lambda x, y: x.endswith(y)),
-        Predicate('iendswith', lambda x, y: x.lower().endswith(y.lower())),
-        Predicate('contains', lambda x, y: x.find(y) >= 0),
-        Predicate('icontains', lambda x, y: x.lower().find(y.lower()) >= 0),
+        'iexact': lambda x, y: x.lower() == y.lower(),
+        'startswith': lambda x, y: x.startswith(y),
+        'istartswith': lambda x, y: x.lower().startswith(y.lower()),
+        'endswith': lambda x, y: x.endswith(y),
+        'iendswith': lambda x, y: x.lower().endswith(y.lower()),
+        'contains': lambda x, y: x.find(y) >= 0,
+        'icontains': lambda x, y: x.lower().find(y.lower()) >= 0,
 
-        Predicate('isnull', lambda x, y: x is None if y else x is not None),
-        Predicate('in', lambda x, y: x in y),
-    )
+        'isnull': lambda x, y: x is None if y else x is not None,
+        'in': lambda x, y: x in y,
+    }
 
     def __init__(self, key, value):
         self.key = key
         self.value = value
         frags = key.split('__')
-        self.predicate = self.DEFAULT_PREDICATE
         if len(frags) > 1 and frags[-1] in self.registry:
             self.predicate = self.registry[frags.pop()]
+        else:
+            self.predicate = self.registry[self.DEFAULT_PREDICATE_NAME]
         self.attrs = frags
 
     def test(self, obj):
