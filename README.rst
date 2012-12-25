@@ -8,25 +8,23 @@ Example
 -------
 ::
 
-    >>> from liquer import Q
-    >>> class A: pass
-    ... 
-    >>> a = A()
-    >>> a.foo = A()
-    >>> a.foo.bar = 'Hello World!'
-    >>> a.foo.baz = 1
-    >>> Q(foo__bar__iexact='hello world!').test(a)
-    True
-    >>> Q(foo__baz__lt=2).test(a)
-    True
-    >>> Q(foo__bar__iexact='hello world!', foo__baz__lt=2).test(a)
-    True
-    >>> Q(foo__bar__iexact='hello world!', foo__baz__lt=1).test(a)
-    False
-    >>> (Q(foo__bar__iexact='hello world!') | Q(foo__baz__lt=1)).test(a)
-    True
-    >>> (Q(foo__bar__iexact='hello world!') & Q(foo__baz__lt=1)).test(a)
-    False
+    from liquer import Q
+
+
+    class B:
+        bar = 'Hello World!'
+        baz = 1
+
+
+    class A:
+        foo = B()
+
+
+    q = Q(foo__bar='Hello World!') | Q(foo__bar__istartswith='hello',
+                                       foo__baz__gt=1)
+
+    print q.test(A())
+
 
 Status
 ------
