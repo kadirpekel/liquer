@@ -18,7 +18,15 @@ Example
     >>> Q(foo__bar__iexact='hello world!').test(a)
     True
     >>> Q(foo__baz__lt=2).test(a)
-    True 
+    True
+    >>> Q(foo__bar__iexact='hello world!', foo__baz__lt=2).test(a)
+    True
+    >>> Q(foo__bar__iexact='hello world!', foo__baz__lt=1).test(a)
+    False
+    >>> (Q(foo__bar__iexact='hello world!') | Q(foo__baz__lt=1)).test(a)
+    True
+    >>> (Q(foo__bar__iexact='hello world!') & Q(foo__baz__lt=1)).test(a)
+    False
 
 Status
 ------
