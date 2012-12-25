@@ -4,6 +4,22 @@ liquer
 
 Query your objects for two cents!
 
+Example
+-------
+::
+
+    >>> from liquer import Q
+    >>> class A: pass
+    ... 
+    >>> a = A()
+    >>> a.foo = A()
+    >>> a.foo.bar = 'Hello World!'
+    >>> a.foo.baz = 1
+    >>> Q(foo__bar__iexact='hello world!').test(a)
+    True
+    >>> Q(foo__baz__lt=2).test(a)
+    True 
+
 Status
 ------
 
