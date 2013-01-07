@@ -11,7 +11,7 @@ Example
     >>> from liquer import Q
 
     >>> q = Q(foo__bar='Hello World!') | Q(foo__bar__istartswith='hello',
-                                       foo__baz__gt=1)
+                                           foo__baz__gt=1)
 
     >>> q({'foo': {'bar': 'Hello 2013!', 'baz': 2}})
     True
