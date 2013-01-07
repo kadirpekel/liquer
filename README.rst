@@ -4,7 +4,7 @@ liquer
 
 Query your objects for two cents with Django like ``Q`` objects.
 
-Basic Example
+Some Examples
 -------------
 ``Q`` objects help you identify an object if its any attribute conforms your
 custom predicate dsl. Let's take a look at the example below::
@@ -36,17 +36,45 @@ custom predicate dsl. Let's take a look at the example below::
     assert q(my_fail_obj)  # Evaluates to False, Throws assertion error
 
 
-Example
--------
-::
+You can tail more attributes using '__' underscores to digg objects::
 
     >>> from liquer import Q
+    
+    >>> my_dict = {'foo': {'bar': {'baz': 1}}}
+    
+    >>> q = Q(foo__bar__baz__lte=2)
 
-    >>> q = Q(foo__bar='Hello World!') | Q(foo__bar__istartswith='hello',
-                                           foo__baz__gt=1)
-
-    >>> q({'foo': {'bar': 'Hello 2013!', 'baz': 2}})
+    >>> q(my_dict)
     True
+
+Also there is chance for applying and/or logics to query couples::
+
+    >>> q = Q(foo__bar__gt=0) & Q(foo__bar__lt=9)  # The same as Q(foo__bar__gt=0, foo__bar__lt=9)
+    >>> q({'foo': {'bar': 5}})
+    True
+    >>> q({'foo': {'bar': 18}})
+    False
+
+Let's try ``or`` logic::
+
+    >>> q = Q(foo__bar=3) | Q(foo__bar=5)
+    >>> q({'foo': {'bar': 3}})
+    True
+    >>> q({'foo': {'bar': 5}})
+    True
+    >>> q({'foo': {'bar': 4}})
+    False
+    
+It's very useful in most cases to register a callback when querying objects::
+
+    >>> q = Q(foo__bar=3) | Q(foo__bar=5)
+    >>> q.callback({'foo': {'bar': 3}}, lambda x: 'bar found %s' % x['foo']['bar'])
+    'bar found 3'
+
+
+More is coming soon...
+
+Enjoy!
 
 Licence
 -------
