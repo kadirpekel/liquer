@@ -69,6 +69,13 @@ It's very useful in most cases to register a callback when querying objects::
     >>> q.callback({'foo': {'bar': 3}}, lambda x: 'bar found %s' % x['foo']['bar'])
     'bar found 3'
 
+The funniest part is to register your own predicates::
+
+    >>> from liquer import Q, register
+    >>> register('is_sqrt', lambda x, y: x / y == y)
+    >>> q = Q(foo__is_sqrt=5)
+    >>> q({'foo': 25})
+    True
 
 More is coming soon...
 

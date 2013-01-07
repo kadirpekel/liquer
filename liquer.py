@@ -6,6 +6,29 @@ Query your objects for two cents!
 :Author: Kadir Pekel
 '''
 
+DEFAULT_PREDICATE_NAME = 'exact'
+
+_registry = {
+    DEFAULT_PREDICATE_NAME: lambda x, y: x == y,
+    'lt': lambda x, y: x < y,
+    'gt': lambda x, y: x > y,
+    'lte': lambda x, y: x <= y,
+    'gte': lambda x, y: x >= y,
+    'iexact': lambda x, y: x.lower() == y.lower(),
+    'startswith': lambda x, y: x.startswith(y),
+    'istartswith': lambda x, y: x.lower().startswith(y.lower()),
+    'endswith': lambda x, y: x.endswith(y),
+    'iendswith': lambda x, y: x.lower().endswith(y.lower()),
+    'contains': lambda x, y: x.find(y) >= 0,
+    'icontains': lambda x, y: x.lower().find(y.lower()) >= 0,
+    'isnull': lambda x, y: x is None if y else x is not None,
+    'in': lambda x, y: x in y,
+}
+
+
+def register(name, predicate):
+    _registry[name] = predicate
+
 
 def digattr(obj, *args):
     '''Function digs and finds any nested attribute value of an object by
@@ -119,25 +142,6 @@ class PredicateQuery(Query):
         True
 
     '''
-    DEFAULT_PREDICATE_NAME = 'exact'
-
-    registry = {
-        DEFAULT_PREDICATE_NAME: lambda x, y: x == y,
-        'lt': lambda x, y: x < y,
-        'gt': lambda x, y: x > y,
-        'lte': lambda x, y: x <= y,
-        'gte': lambda x, y: x >= y,
-        'iexact': lambda x, y: x.lower() == y.lower(),
-        'startswith': lambda x, y: x.startswith(y),
-        'istartswith': lambda x, y: x.lower().startswith(y.lower()),
-        'endswith': lambda x, y: x.endswith(y),
-        'iendswith': lambda x, y: x.lower().endswith(y.lower()),
-        'contains': lambda x, y: x.find(y) >= 0,
-        'icontains': lambda x, y: x.lower().find(y.lower()) >= 0,
-        'isnull': lambda x, y: x is None if y else x is not None,
-        'in': lambda x, y: x in y,
-    }
-
     def __init__(self, key, value):
         '''Convenient constructor
 
@@ -152,10 +156,10 @@ class PredicateQuery(Query):
         self.key = key
         self.value = value
         frags = key.split('__')
-        if len(frags) > 1 and frags[-1] in self.registry:
-            self.predicate = self.registry[frags.pop()]
+        if len(frags) > 1 and frags[-1] in _registry:
+            self.predicate = _registry[frags.pop()]
         else:
-            self.predicate = self.registry[self.DEFAULT_PREDICATE_NAME]
+            self.predicate = _registry[DEFAULT_PREDICATE_NAME]
         self.attrs = frags
         super(PredicateQuery, self).__init__()
 
