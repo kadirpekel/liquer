@@ -1,51 +1,124 @@
+'''Liquer
+
+Query your objects for two cents!
+
+:Licence: MIT
+:Author: Kadir Pekel
+'''
+
+
 def digattr(obj, *args):
+    '''Function digs and finds any nested attribute value of an object by
+    given args path
+
+    :param obj: object to digg
+    :param type: object
+
+    :param *args: attribute path
+    :param type: list
+
+    :Example::
+
+        >>> class A:
+                bar = 'baz'
+        >>> class B:
+                foo = A()
+        >>> b = B()
+        >>> digattr(b, 'foo', 'bar')
+        'baz'
+
+    '''
+    obj = type('obj', (), obj)() if isinstance(obj, dict) else obj
     return digattr(getattr(obj, args[0]), *args[1:]) if args else obj
 
 
 class Query(object):
+    '''Base class for concrete Query classes'''
 
-    def __init__(self, callback=None):
-        self.callback = callback
+    def _test(self, obj):
+        '''Main entry point for a :py:class:``Query`` object. This method tests
+        supplied object against this query. Subclasses have to override this
+        method.
 
-    def test(self, obj):
+        :param obj: subject object
+        :param type: object
+
+        '''
         raise NotImplemented()
 
     def __and__(self, other):
+        '''Overrides ``and`` operator and generates a
+        :py:class``CompoundQuery`` which supports and/or logics between
+        queries.
+
+        :param other: Compound query object
+        :param type: :py:class:``Query``
+
+        '''
         return CompoundQuery(self, other)
 
     def __or__(self, other):
+        '''Overrides or operator just like the ``and`` one.
+
+        :param other: Compound query object
+        :param type: :py:class:Query
+
+        '''
         return CompoundQuery(self, other, op=lambda x, y: x or y)
 
-    def with_callback(self, callback):
-        self.callback = callback
-        return self
+    def callback(self, obj, fn):
+        '''Tests object with a callback function which is gonna be executed
+        once the test succeeds
 
-    def __call__(self, *args):
-        if len(args) == 1 and callable(args[0]):
-            return self.with_callback(args[0])
-        elif len(args) >= 1 and not callable(args[0]):
-            is_ok = self.test(args[0])
-            if is_ok:
-                if self.callback:
-                    self.callback(self, args[0])
-            return is_ok
-        else:
-            raise ValueError()
+        :param obj: object to test
+        :param type: object
+
+        :param fn: callback function to execute
+        :param tyoe: function
+
+        '''
+        return fn(obj) if self(obj) else obj
+
+    def __call__(self, obj):
+        return self._test(obj)
 
 
 class CompoundQuery(Query):
+    '''Compound query class which tests multiple queries by applying and/or
+    logics to them
 
+    '''
     def __init__(self, *args, **kwargs):
+        '''Convenient constructor
+
+        :param *args: query list
+        :param type: list
+
+        :param op: operator
+        :param type: lambda
+
+        '''
         self.queries = args
         self.op = kwargs.pop('op', lambda x, y: x and y)
-        super(CompoundQuery, self).__init__(**kwargs)
+        super(CompoundQuery, self).__init__()
 
-    def test(self, obj):
+    def _test(self, obj):
+        '''Convenient :py:func:``Query._test`` implementation'''
         return reduce(self.op, [query(obj) for query in self.queries])
 
 
 class PredicateQuery(Query):
+    '''Most notable :py:class:``Query`` implementation which tests objects
+    against attribute paths concatanated with double underscores preceding with
+    a predicate name.
 
+    :Example::
+
+        >>> pq = PredicateQuery('foo__bar__iexact', 'Baz')
+        >>> pq({'foo': {'bar': 'baz'}})
+        True
+
+    '''
     DEFAULT_PREDICATE_NAME = 'exact'
 
     registry = {
@@ -65,7 +138,17 @@ class PredicateQuery(Query):
         'in': lambda x, y: x in y,
     }
 
-    def __init__(self, key, value, **kwargs):
+    def __init__(self, key, value):
+        '''Convenient constructor
+
+        :param key: attribute path joined with double underscores with a
+                    following predicate name
+        :param type: str
+
+        :param value: attribute value to test
+        :param type: object
+
+        '''
         self.key = key
         self.value = value
         frags = key.split('__')
@@ -74,14 +157,27 @@ class PredicateQuery(Query):
         else:
             self.predicate = self.registry[self.DEFAULT_PREDICATE_NAME]
         self.attrs = frags
-        super(PredicateQuery, self).__init__(**kwargs)
+        super(PredicateQuery, self).__init__()
 
-    def test(self, obj):
+    def _test(self, obj):
+        '''Convenient :py:func:``Query._test`` implementation'''
         return self.predicate(digattr(obj, *self.attrs), self.value)
 
 
 class Q(CompoundQuery):
+    '''Convenient :py:class:``PredicateQuery`` like Query implementation
+    which generates one or more :py:class:``Query`` instances by the usage of
+    keyword arguments. More queries are combined with each other using ``and``
+    logic.
 
+    '''
     def __init__(self, **kwargs):
+        '''Convenient constructor
+
+        :param **kwargs: keyword arguments consists of key value pairs those
+                         passed directly to :py:class:``PredicateQuery``
+        :param type: dict
+
+        '''
         super(Q, self).__init__(
             *[PredicateQuery(k, v) for k, v in kwargs.items()])

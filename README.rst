@@ -1,45 +1,20 @@
-=======
+======
 liquer
-=======
+======
 
-Query your objects for two cents!
+Query your objects for two cents with Django like ``Q`` objects.
 
 Example
 -------
 ::
 
-    from liquer import Q
+    >>> from liquer import Q
 
-
-    class B:
-        bar = 'Hello World!'
-        baz = 1
-
-
-    class A:
-        foo = B()
-
-
-    a = A()
-
-    q = Q(foo__bar='Hello World!') | Q(foo__bar__istartswith='hello',
+    >>> q = Q(foo__bar='Hello World!') | Q(foo__bar__istartswith='hello',
                                        foo__baz__gt=1)
 
-    assert q(a)
-
-    a.foo.bar = 'Hello 2013!'
-
-    assert not q(a)
-
-    a.foo.baz = 2
-
-    assert q(a)
-
-
-Status
-------
-
-Development ongoing...
+    >>> q({'foo': {'bar': 'Hello 2013!', 'baz': 2}})
+    True
 
 Licence
 -------

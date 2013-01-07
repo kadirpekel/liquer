@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='liquer',
     py_modules=['liquer'],
-    version='0.0.1',
+    version='0.0.2',
     description='Query your objects for two cents!',
     author='Kadir Pekel',
     author_email='kadirpekel@gmail.com',
