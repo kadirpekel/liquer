@@ -39,9 +39,7 @@ custom predicate dsl. Let's take a look at the example below::
 You can tail more attributes using '__' underscores to digg objects::
 
     >>> from liquer import Q
-    
     >>> my_dict = {'foo': {'bar': {'baz': 1}}}
-    
     >>> q = Q(foo__bar__baz__lte=2)
 
     >>> q(my_dict)
