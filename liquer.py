@@ -6,6 +6,8 @@ Query your objects for two cents!
 :Author: Kadir Pekel
 '''
 
+from operator import and_, or_
+
 DEFAULT_PREDICATE_NAME = 'exact'
 
 _registry = {
@@ -87,7 +89,7 @@ class Query(object):
         :param type: :py:class:Query
 
         '''
-        return CompoundQuery(self, other, op=lambda x, y: x or y)
+        return CompoundQuery(self, other, op='or')
 
     def callback(self, obj, fn):
         '''Tests object with a callback function which is gonna be executed
@@ -111,6 +113,12 @@ class CompoundQuery(Query):
     logics to them
 
     '''
+
+    OPS = {
+        'and': and_,
+        'or': or_
+    }
+
     def __init__(self, *args, **kwargs):
         '''Convenient constructor
 
@@ -122,12 +130,22 @@ class CompoundQuery(Query):
 
         '''
         self.queries = args
-        self.op = kwargs.pop('op', lambda x, y: x and y)
+        self.op = kwargs.pop('op', 'and')
+        if self.op not in self.OPS.keys():
+            raise ValueError("Invalid op. Can be either 'and', or 'or'")
         super(CompoundQuery, self).__init__()
 
     def _test(self, obj):
         '''Convenient :py:func:``Query._test`` implementation'''
-        return reduce(self.op, [query(obj) for query in self.queries])
+        op_func = self.OPS[self.op]
+        result = True if self.op == 'and' else False
+        for query in self.queries:
+            result = op_func(result, query(obj))
+            if (self.op == 'and' and not result):
+                return False
+            if (self.op == 'or' and result):
+                return True
+        return result
 
 
 class PredicateQuery(Query):
